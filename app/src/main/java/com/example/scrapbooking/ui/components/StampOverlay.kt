@@ -24,14 +24,8 @@ fun StampOverlay(modifier: Modifier = Modifier) {
             contentDescription = "Stamp Mask",
             modifier = Modifier
                 .fillMaxSize(0.8f) // Chiếm 80% màn hình để chừa chỗ cho UI khác
-                .aspectRatio(1f), // Hoặc tỉ lệ theo file mask của bạn
+                .aspectRatio(1f), // tỉ lệ theo file
             contentScale = ContentScale.Fit,
-            alpha = 0.5f // Làm mờ nhẹ để vẫn thấy Camera bên dưới rõ hơn
         )
-
-        // Vẽ thêm một viền nét đứt (Optional) để tăng tính "thiết kế"
-        Canvas(modifier = Modifier.matchParentSize()) {
-            // Bạn có thể vẽ thêm guide line ở đây nếu muốn
-        }
     }
 }

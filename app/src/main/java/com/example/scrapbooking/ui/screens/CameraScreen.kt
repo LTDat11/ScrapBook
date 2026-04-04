@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -53,54 +54,42 @@ fun CameraScreen(onNavigateToGallery: () -> Unit) {
 
 @Composable
 fun CameraContent(onNavigateToGallery: () -> Unit) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-
-    // Nơi giữ ImageCapture để gọi lệnh chụp ảnh
     var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // 1. Camera Preview
-        CameraPreviewView { previewUseCase ->
-            val cameraProvider = cameraProviderFuture.get()
-            imageCapture = ImageCapture.Builder()
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                .build()
-
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    lifecycleOwner,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
-                    previewUseCase,
-                    imageCapture
-                )
-            } catch (e: Exception) {
-                Log.e("CameraX", "Binding failed", e)
+    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+        // Gọi Preview và lấy instance của imageCapture
+        CameraPreviewView(
+            onImageCaptureCreated = { capture ->
+                imageCapture = capture
             }
-        }
+        )
 
-        // 2. Overlay Khung Tem (File mask.png của bạn)
+        // Overlay khung tem của bạn
         StampOverlay(modifier = Modifier.fillMaxSize())
 
-        // 3. UI Nút bấm
+        // Nút chụp ảnh
+        FloatingActionButton(
+            onClick = {
+                imageCapture?.let {
+                    // Ở bước sau chúng ta sẽ viết hàm capturePhoto(it)
+                    Log.d("CameraX", "Sẵn sàng chụp!")
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp),
+            containerColor = Color.White,
+            shape = CircleShape
+        ) {
+            Icon(Icons.Default.PhotoCamera, contentDescription = "Chụp")
+        }
+
+        // Nút Gallery
         IconButton(
             onClick = onNavigateToGallery,
             modifier = Modifier.align(Alignment.TopEnd).padding(16.dp)
         ) {
             Icon(Icons.Default.Collections, contentDescription = null, tint = Color.White)
-        }
-
-        FloatingActionButton(
-            onClick = {
-                // TODO: Gọi hàm capturePhoto(imageCapture) ở đây
-            },
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 32.dp),
-            containerColor = Color.White,
-            shape = CircleShape
-        ) {
-            Icon(Icons.Default.PhotoCamera, contentDescription = "Chụp")
         }
     }
 }
