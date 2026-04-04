@@ -1,8 +1,12 @@
 package com.example.scrapbooking.ui.screens
 
+import android.graphics.Bitmap
 import android.util.Log
+import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -25,8 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.scrapbooking.ui.components.StampOverlay
+import com.example.scrapbooking.ui.components.StampPreviewDialog
+import com.example.scrapbooking.util.BitmapUtils
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -54,6 +61,12 @@ fun CameraScreen(onNavigateToGallery: () -> Unit) {
 
 @Composable
 fun CameraContent(onNavigateToGallery: () -> Unit) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var showPreviewDialog by remember { mutableStateOf(false) }
+
     var imageCapture: ImageCapture? by remember { mutableStateOf(null) }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
@@ -70,9 +83,28 @@ fun CameraContent(onNavigateToGallery: () -> Unit) {
         // Nút chụp ảnh
         FloatingActionButton(
             onClick = {
-                imageCapture?.let {
-                    // Ở bước sau chúng ta sẽ viết hàm capturePhoto(it)
-                    Log.d("CameraX", "Sẵn sàng chụp!")
+                imageCapture?.let { it -> // Có ImageCapture mới chụp
+                    it.takePicture(
+                        ContextCompat.getMainExecutor(context),
+                        object : ImageCapture.OnImageCapturedCallback() {
+                            override fun onCaptureSuccess(image: ImageProxy) {
+                                // GỌI HÀM "ÉP TEM" DUY NHẤT VÀ FIX XOAY
+                                // (Hàm mới này nhận thẳng ImageProxy)
+                                val stampBitmap = BitmapUtils.createStampBitmapFromImageProxy(context, image)
+
+                                // Cập nhật State để hiện Pop-up
+                                capturedBitmap = stampBitmap
+                                showPreviewDialog = true
+
+                                // KHÔNG CẦN image.close() ở đây nữa, vì đã close trong BitmapUtils rồi
+                            }
+
+                            override fun onError(exception: ImageCaptureException) {
+                                Log.e("CameraX", "Capture failed: ${exception.message}", exception)
+                                Toast.makeText(context, "Lỗi chụp ảnh!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
                 }
             },
             modifier = Modifier
@@ -82,6 +114,22 @@ fun CameraContent(onNavigateToGallery: () -> Unit) {
             shape = CircleShape
         ) {
             Icon(Icons.Default.PhotoCamera, contentDescription = "Chụp")
+        }
+
+        if (showPreviewDialog) {
+            StampPreviewDialog(
+                bitmap = capturedBitmap,
+                onDismiss = {
+                    showPreviewDialog = false
+                    capturedBitmap = null // Chụp lại thì xóa bitmap cũ
+                },
+                onSave = { bitmap ->
+                    // TODO: Gọi logic Lưu file vật lý vào máy ở bước sau
+                    showPreviewDialog = false
+                    capturedBitmap = null
+                    Toast.makeText(context, "Đã lưu tem thành công!", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
 
         // Nút Gallery
