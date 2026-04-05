@@ -4,9 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.scrapbooking.ui.MainNavigation
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
+import com.example.scrapbooking.ui.navigation.AppNavigation
 import com.example.scrapbooking.ui.theme.ScrapBookingTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -17,16 +19,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ScrapBookingTheme {
-                MainNavigation()
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    AppNavigation()
+                }
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ScrapBookingTheme {
-        MainNavigation()
     }
 }
