@@ -1,24 +1,44 @@
 package com.example.scrapbooking.ui.screens
 
+import android.graphics.Bitmap
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -30,77 +50,167 @@ import com.example.scrapbooking.R
 import com.example.scrapbooking.ui.components.ErrorView
 import com.example.scrapbooking.ui.components.LoadingView
 import com.example.scrapbooking.ui.components.PermissionDeniedView
+import com.example.scrapbooking.ui.components.StampShape
 import com.example.scrapbooking.ui.state.HomeUiState
 import com.example.scrapbooking.viewmodel.HomeViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import androidx.compose.runtime.collectAsState
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HomeScreen
+// ─────────────────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun HomeScreen (viewModel: HomeViewModel = hiltViewModel()) {
-    val context = LocalContext.current
+fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
+    val uiState by viewModel.uiState.collectAsState()
 
-    // Yêu cầu quyền khi lần đầu vào màn hình
-    LaunchedEffect(Unit) {
-        cameraPermissionState.launchPermissionRequest()
-    }
+    // Giữ tham chiếu đến PreviewView để chụp bitmap
+    var previewViewRef by remember { mutableStateOf<PreviewView?>(null) }
 
-    // Cập nhật UI state dựa trên quyền
+    // Yêu cầu quyền lần đầu
+    LaunchedEffect(Unit) { cameraPermissionState.launchPermissionRequest() }
+
+    // Đồng bộ trạng thái quyền → ViewModel
     LaunchedEffect(cameraPermissionState.status) {
         when (cameraPermissionState.status) {
             PermissionStatus.Granted -> viewModel.setCameraReady()
             is PermissionStatus.Denied -> {
-                if ((cameraPermissionState.status as PermissionStatus.Denied).shouldShowRationale) {
-                    viewModel.setError("Cần cấp quyền camera để sử dụng")
-                } else {
-                    viewModel.setPermissionDenied()
-                }
+                val denied = cameraPermissionState.status as PermissionStatus.Denied
+                if (denied.shouldShowRationale) viewModel.setError("Cần cấp quyền camera để sử dụng")
+                else viewModel.setPermissionDenied()
             }
         }
     }
 
+    // Animation thu nhỏ khi nhấn mask2
+    var isMaskPressed by remember { mutableStateOf(false) }
+    val maskScale by animateFloatAsState(
+        targetValue = if (isMaskPressed) 0.93f else 1.0f,
+        animationSpec = spring(dampingRatio = 0.4f, stiffness = 500f),
+        label = "maskPressScale"
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
-        // Hiển thị camera nếu đã có quyền
+
+        // ── Camera preview ──────────────────────────────────────────────────
         if (cameraPermissionState.status == PermissionStatus.Granted) {
-            CameraPreviewWithOverlay(
+            CameraPreview(
                 modifier = Modifier.fillMaxSize(),
                 lifecycleOwner = lifecycleOwner,
-                onError = { error ->
-                    viewModel.setError("Camera error: $error")
-                }
+                onPreviewViewReady = { previewViewRef = it },
+                onError = { viewModel.setError("Camera error: $it") }
             )
         } else {
-            // Hiển thị thông báo khi chưa có quyền
-            when (val state = viewModel.uiState.collectAsState().value) {
-                HomeUiState.PermissionDenied -> PermissionDeniedView(
-                    onRequestPermission = { cameraPermissionState.launchPermissionRequest() }
-                )
-                is HomeUiState.Error -> ErrorView(message = state.message)
+            when (uiState) {
+                is HomeUiState.PermissionDenied ->
+                    PermissionDeniedView(onRequestPermission = { cameraPermissionState.launchPermissionRequest() })
+                is HomeUiState.Error ->
+                    ErrorView(message = (uiState as HomeUiState.Error).message)
                 else -> LoadingView()
             }
         }
 
-        // Overlay khung hình PNG ở giữa màn hình
+        // ── Khung mask2 — có hiệu ứng nhấn + trigger chụp ảnh ─────────────
         Image(
-            painter = painterResource(id = R.drawable.mask2), // file frame.png trong res/drawable
-            contentDescription = "Camera Frame",
-            modifier = Modifier.fillMaxSize(),
+            painter = painterResource(id = R.drawable.mask2),
+            contentDescription = "Stamp Frame",
+            modifier = Modifier
+                .fillMaxSize()
+                .scale(maskScale)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            isMaskPressed = true
+                            tryAwaitRelease()
+                            isMaskPressed = false
+                        },
+                        onTap = {
+                            previewViewRef?.let { pv -> viewModel.captureStamp(pv) }
+                        }
+                    )
+                },
             contentScale = ContentScale.Fit,
             alignment = Alignment.Center
         )
+
+        // ── Stamp popup ─────────────────────────────────────────────────────
+        if (uiState is HomeUiState.CapturedStamp) {
+            StampPopup(
+                bitmap = (uiState as HomeUiState.CapturedStamp).bitmap,
+                onDismiss = { viewModel.dismissStamp() }
+            )
+        }
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Stamp Popup
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
-private fun CameraPreviewWithOverlay(
+private fun StampPopup(bitmap: Bitmap, onDismiss: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.65f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        // Khu vực stamp — chặn sự kiện click để không đóng popup khi bấm vào stamp
+        Box(
+            modifier = Modifier
+                .size(width = 250.dp, height = 310.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {}        // consume click — không bubble lên scrim
+                )
+        ) {
+            // Ảnh crop được clip bằng StampShape (7 ngang × 9 dọc bán nguyệt)
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "Stamp Photo",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(StampShape(hPerforations = 7, vPerforations = 9)),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        // Nút đóng
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Đóng popup",
+                tint = Color.White
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Camera Preview (tách logic camera, expose PreviewView reference)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun CameraPreview(
     modifier: Modifier = Modifier,
     lifecycleOwner: LifecycleOwner,
+    onPreviewViewReady: (PreviewView) -> Unit,
     onError: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -108,83 +218,62 @@ private fun CameraPreviewWithOverlay(
     var previewUseCase by remember { mutableStateOf<Preview?>(null) }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
 
-    // Khởi tạo CameraProvider
     LaunchedEffect(Unit) {
         try {
-            val providerFuture = ProcessCameraProvider.getInstance(context)
-            providerFuture.addListener({
-                cameraProvider = providerFuture.get()
-            }, ContextCompat.getMainExecutor(context))
+            val future = ProcessCameraProvider.getInstance(context)
+            future.addListener({ cameraProvider = future.get() }, ContextCompat.getMainExecutor(context))
         } catch (e: Exception) {
             onError(e.message ?: "Camera init failed")
         }
     }
 
-    // Theo dõi lifecycle để bind/unbind camera
     DisposableEffect(lifecycleOwner, cameraProvider) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> {
-                    bindCameraUseCases(
-                        context,
-                        cameraProvider,
-                        previewUseCase,
-                        cameraExecutor,
-                        onError
-                    )
-                }
-
-                Lifecycle.Event.ON_PAUSE -> {
-                    unbindCameraUseCases(cameraProvider)
-                }
-
+                Lifecycle.Event.ON_RESUME ->
+                    bindCamera(context, cameraProvider, previewUseCase, onError)
+                Lifecycle.Event.ON_PAUSE ->
+                    cameraProvider?.unbindAll()
                 else -> {}
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             cameraExecutor.shutdown()
-            unbindCameraUseCases(cameraProvider)
+            cameraProvider?.unbindAll()
         }
     }
 
     AndroidView(
         factory = { ctx ->
             PreviewView(ctx).apply {
-                this.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                // PreviewUseCase sẽ được bind sau, nhưng cần giữ tham chiếu để bind
-                previewUseCase = Preview.Builder().build().also { preview ->
-                    preview.setSurfaceProvider(this.surfaceProvider)
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                previewUseCase = Preview.Builder().build().also {
+                    it.setSurfaceProvider(surfaceProvider)
                 }
+                onPreviewViewReady(this)     // trả reference ra ngoài
             }
         },
         modifier = modifier
     )
 }
 
-private fun bindCameraUseCases(
+private fun bindCamera(
     context: android.content.Context,
     cameraProvider: ProcessCameraProvider?,
     previewUseCase: Preview?,
-    cameraExecutor: ExecutorService,
     onError: (String) -> Unit
 ) {
     if (cameraProvider == null || previewUseCase == null) return
     try {
         cameraProvider.unbindAll()
-        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
         cameraProvider.bindToLifecycle(
             context as androidx.lifecycle.LifecycleOwner,
-            cameraSelector,
+            CameraSelector.DEFAULT_BACK_CAMERA,
             previewUseCase
         )
     } catch (e: Exception) {
         onError(e.message ?: "Camera binding failed")
     }
-}
-
-private fun unbindCameraUseCases(cameraProvider: ProcessCameraProvider?) {
-    cameraProvider?.unbindAll()
 }
