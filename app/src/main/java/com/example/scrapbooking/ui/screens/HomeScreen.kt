@@ -168,7 +168,7 @@ private fun StampPopup(bitmap: Bitmap, onDismiss: () -> Unit) {
         // Khu vực stamp — chặn sự kiện click để không đóng popup khi bấm vào stamp
         Box(
             modifier = Modifier
-                .size(width = 250.dp, height = 310.dp)
+                .size(width = 155.dp, height = 190.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,

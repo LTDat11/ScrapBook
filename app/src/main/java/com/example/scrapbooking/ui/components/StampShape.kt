@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 class StampShape(
     private val hPerforations: Int = 7,
     private val vPerforations: Int = 9,
-    private val perforationRadius: Dp = 10.dp
+    private val perforationRadius: Dp = 5.5.dp
 ) : Shape {
 
     override fun createOutline(
