@@ -10,10 +10,10 @@ import javax.inject.Singleton
  * (ước lượng từ ảnh: frame kim loại chiếm ~17% ngang và ~20% dọc)
  */
 data class MaskRatios(
-    val leftRatio: Float   = 0.17f,
-    val rightRatio: Float  = 0.83f,
-    val topRatio: Float    = 0.20f,
-    val bottomRatio: Float = 0.80f
+    val leftRatio: Float   = 0.32f,
+    val rightRatio: Float  = 0.70f,
+    val topRatio: Float    = 0.37f,
+    val bottomRatio: Float = 0.65f
 )
 
 @Singleton
