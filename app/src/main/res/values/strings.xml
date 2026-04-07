@@ -2,4 +2,27 @@
     <string name="app_name">ScrapBooking</string>
     <string name="home_title">Home</string>
     <string name="gallery_title">Gallery</string>
+    
+    <!-- Camera Texts -->
+    <string name="error_cannot_capture">Không thể chụp ảnh</string>
+    <string name="error_camera_rationale">Cần cấp quyền camera để sử dụng</string>
+    <string name="error_camera_format">Lỗi camera: %1$s</string>
+    <string name="error_camera_init">Khởi tạo camera thất bại</string>
+    <string name="error_camera_bind">Kết nối camera thất bại</string>
+    
+    <!-- UI Definitions -->
+    <string name="text_loading">Đang tải...</string>
+    <string name="title_album_screen">Album Screen</string>
+    <string name="desc_stamp_frame">Khung chụp ảnh</string>
+    <string name="desc_stamp_photo">Ảnh đã chụp</string>
+    
+    <!-- Actions -->
+    <string name="action_retry">Làm lại</string>
+    <string name="action_cancel">Hủy</string>
+    <string name="action_save_photo">Lưu ảnh</string>
+    
+    <!-- Permission Request -->
+    <string name="title_camera_permission">Quyền truy cập camera</string>
+    <string name="desc_camera_permission">Ứng dụng cần camera để quét mã và thực hiện các tính năng. Vui lòng cấp quyền để tiếp tục.</string>
+    <string name="action_grant_permission">Cấp quyền ngay</string>
 </resources>

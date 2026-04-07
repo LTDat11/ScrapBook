@@ -17,6 +17,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.example.scrapbooking.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -44,13 +46,13 @@ fun PermissionDeniedView(onRequestPermission: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Quyền truy cập camera",
+                text = stringResource(R.string.title_camera_permission),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Ứng dụng cần camera để quét mã và thực hiện các tính năng. Vui lòng cấp quyền để tiếp tục.",
+                text = stringResource(R.string.desc_camera_permission),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -61,7 +63,7 @@ fun PermissionDeniedView(onRequestPermission: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(0.7f),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Cấp quyền ngay")
+                Text(stringResource(R.string.action_grant_permission))
             }
         }
     }
