@@ -39,11 +39,13 @@ The project follows modern Android development standards to ensure scalability a
 ## Installation and Build
 To build this project, you will need:
 1. Android Studio Ladybug or newer.
-2. JDK 17 or 21 (specifically the Android Studio JBR).
-3. Android SDK Level 35 or higher.
+2. Android SDK Level 35 or higher.
 
-To build from the command line:
-./gradlew assembleDebug -Porg.gradle.java.home="/Path/To/Your/AndroidStudio/jbr/Contents/Home"
+**Steps to run via Android Studio:**
+1. Clone the project using **Android Studio**.
+2. Open the `gradle.properties` file and **comment out** the `org.gradle.java.home` line. 
+   *(Note: This line is only intended for building/checking via command line without Android Studio. Commenting it out ensures Android Studio can run the project normally).*
+3. Sync project with Gradle files and Run.
 
 ## Current Development Status
 The application has completed its core camera and stamp creation engine. Future versions will include the AlbumScreen for organizing and managing the collection of created stamps.
