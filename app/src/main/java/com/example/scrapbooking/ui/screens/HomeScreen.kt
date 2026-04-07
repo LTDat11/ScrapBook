@@ -57,7 +57,21 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import java.util.concurrent.Executors
-
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.alpha
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 // ─────────────────────────────────────────────────────────────────────────────
 // HomeScreen
 // ─────────────────────────────────────────────────────────────────────────────
@@ -142,7 +156,8 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
         if (uiState is HomeUiState.CapturedStamp) {
             StampPopup(
                 bitmap = (uiState as HomeUiState.CapturedStamp).bitmap,
-                onDismiss = { viewModel.dismissStamp() }
+                onDismiss = { viewModel.dismissStamp() },
+                onSave = { viewModel.saveStamp() }
             )
         }
     }
@@ -153,29 +168,59 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun StampPopup(bitmap: Bitmap, onDismiss: () -> Unit) {
+private fun StampPopup(bitmap: Bitmap, onDismiss: () -> Unit, onSave: () -> Unit) {
+    var animateIn by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        animateIn = true
+    }
+
+    fun dismissWithAnimation(action: () -> Unit) {
+        animateIn = false
+        coroutineScope.launch {
+            delay(300)
+            action()
+        }
+    }
+
+    // Khoảng cách bay lên
+    val translateY by animateFloatAsState(
+        targetValue = if (animateIn) -100f else 0f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 200f),
+        label = "translateY"
+    )
+
+    // Phóng to lên từ kích thước bằng lỗ hổng mask
+    val scale by animateFloatAsState(
+        targetValue = if (animateIn) 1.5f else 1.0f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 200f),
+        label = "scale"
+    )
+
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (animateIn) 1f else 0f,
+        animationSpec = tween(300),
+        label = "contentAlpha"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.65f))
+            .background(Color.Black.copy(alpha = 0.65f * contentAlpha))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
-                onClick = onDismiss
+                onClick = {} // Ngăn click ra ngoài
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Khu vực stamp — chặn sự kiện click để không đóng popup khi bấm vào stamp
         Box(
             modifier = Modifier
+                .offset(y = translateY.dp)
+                .scale(scale)
                 .size(width = 155.dp, height = 190.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = {}        // consume click — không bubble lên scrim
-                )
         ) {
-            // Ảnh crop được clip bằng StampShape (7 ngang × 9 dọc bán nguyệt)
             Image(
                 bitmap = bitmap.asImageBitmap(),
                 contentDescription = "Stamp Photo",
@@ -186,18 +231,31 @@ private fun StampPopup(bitmap: Bitmap, onDismiss: () -> Unit) {
             )
         }
 
-        // Nút đóng
-        IconButton(
-            onClick = onDismiss,
+        Column(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp)
+                .align(Alignment.Center)
+                .offset(y = (translateY + 190).dp)
+                .fillMaxWidth(0.7f)
+                .alpha(contentAlpha),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = "Đóng popup",
-                tint = Color.White
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(
+                    onClick = { dismissWithAnimation(onDismiss) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+                ) {
+                    Text("Hủy", color = Color.White)
+                }
+                
+                Button(
+                    onClick = { dismissWithAnimation(onSave) }
+                ) {
+                    Text("Lưu ảnh")
+                }
+            }
         }
     }
 }
