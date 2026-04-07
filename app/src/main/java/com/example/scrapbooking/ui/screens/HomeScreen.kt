@@ -38,6 +38,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -82,6 +83,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     // Giữ tham chiếu đến PreviewView để chụp bitmap
     var previewViewRef by remember { mutableStateOf<PreviewView?>(null) }
@@ -95,7 +97,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             PermissionStatus.Granted -> viewModel.setCameraReady()
             is PermissionStatus.Denied -> {
                 val denied = cameraPermissionState.status as PermissionStatus.Denied
-                if (denied.shouldShowRationale) viewModel.setError("Cần cấp quyền camera để sử dụng")
+                if (denied.shouldShowRationale) viewModel.setError(context.getString(R.string.error_camera_rationale))
                 else viewModel.setPermissionDenied()
             }
         }
@@ -117,7 +119,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 modifier = Modifier.fillMaxSize(),
                 lifecycleOwner = lifecycleOwner,
                 onPreviewViewReady = { previewViewRef = it },
-                onError = { viewModel.setError("Camera error: $it") }
+                onError = { viewModel.setError(context.getString(R.string.error_camera_format, it)) }
             )
         } else {
             when (uiState) {
@@ -132,7 +134,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
         // ── Khung mask2 — có hiệu ứng nhấn + trigger chụp ảnh ─────────────
         Image(
             painter = painterResource(id = R.drawable.mask2),
-            contentDescription = "Stamp Frame",
+            contentDescription = stringResource(R.string.desc_stamp_frame),
             modifier = Modifier
                 .fillMaxSize()
                 .scale(maskScale)
@@ -223,7 +225,7 @@ private fun StampPopup(bitmap: Bitmap, onDismiss: () -> Unit, onSave: () -> Unit
         ) {
             Image(
                 bitmap = bitmap.asImageBitmap(),
-                contentDescription = "Stamp Photo",
+                contentDescription = stringResource(R.string.desc_stamp_photo),
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(StampShape(hPerforations = 7, vPerforations = 9)),
@@ -247,13 +249,13 @@ private fun StampPopup(bitmap: Bitmap, onDismiss: () -> Unit, onSave: () -> Unit
                     onClick = { dismissWithAnimation(onDismiss) },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
                 ) {
-                    Text("Hủy", color = Color.White)
+                    Text(stringResource(R.string.action_cancel), color = Color.White)
                 }
                 
                 Button(
                     onClick = { dismissWithAnimation(onSave) }
                 ) {
-                    Text("Lưu ảnh")
+                    Text(stringResource(R.string.action_save_photo))
                 }
             }
         }
@@ -281,7 +283,7 @@ private fun CameraPreview(
             val future = ProcessCameraProvider.getInstance(context)
             future.addListener({ cameraProvider = future.get() }, ContextCompat.getMainExecutor(context))
         } catch (e: Exception) {
-            onError(e.message ?: "Camera init failed")
+            onError(e.message ?: context.getString(R.string.error_camera_init))
         }
     }
 
@@ -332,6 +334,6 @@ private fun bindCamera(
             previewUseCase
         )
     } catch (e: Exception) {
-        onError(e.message ?: "Camera binding failed")
+        onError(e.message ?: context.getString(R.string.error_camera_bind))
     }
 }
