@@ -58,4 +58,10 @@ class HomeViewModel @Inject constructor(
     fun dismissStamp() {
         _uiState.value = HomeUiState.Ready
     }
+
+    fun saveStamp() {
+        // Thực hiện lưu ảnh (vào db/storage) ở đây
+        // Sau đó trở về trạng thái Ready
+        dismissStamp()
+    }
 }
