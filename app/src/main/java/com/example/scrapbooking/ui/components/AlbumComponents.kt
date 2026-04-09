@@ -1,5 +1,6 @@
 package com.example.scrapbooking.ui.components
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,15 +19,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.scrapbooking.BuildConfig
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import com.example.scrapbooking.R
 
 @Composable
 fun MonthHeader(
@@ -112,15 +116,18 @@ fun DayContent(
             return@Box
         }
 
-        // Hiển thị ảnh đầu tiên làm nền của cell
+        // Hiển thị ảnh cuối cùng (latest) làm nền của cell
         if (photos.isNotEmpty()) {
+            val latestPhoto = photos.last()
+            if (BuildConfig.DEBUG) Log.d("DayContent", "Thumbnail path: $latestPhoto")
             AsyncImage(
-                model = photos.first(),
+                model = latestPhoto,
                 contentDescription = "Day Image",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                placeholder = painterResource(R.drawable.ic_launcher_background),
+                error = painterResource(R.drawable.ic_launcher_foreground)
             )
-            
             // Nếu có nhiều ảnh, hiển thị badge số lượng ở góc trên bên trái
             if (photos.size > 1) {
                 Box(
@@ -140,7 +147,7 @@ fun DayContent(
                     )
                 }
             }
-        } 
+        }
         
         // Văn bản ngày ở góc dưới bên phải
         Box(

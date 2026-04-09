@@ -25,6 +25,7 @@ import com.example.scrapbooking.ui.components.DaysOfWeekTitle
 import com.example.scrapbooking.ui.components.MonthHeader
 import com.example.scrapbooking.viewmodel.AlbumViewModel
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.scrapbooking.ui.state.AlbumUiState
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.WeekCalendar
 import com.kizitonwose.calendar.compose.weekcalendar.rememberWeekCalendarState
@@ -51,14 +52,14 @@ fun AlbumScreen(
     
     val daysOfWeek = remember { daysOfWeek(firstDayOfWeek) }
     
-    val stampImages by viewModel.stampImages.collectAsStateWithLifecycle()
-    // Group stampImages theo ngày (giả sử path hoặc lastModified có thể convert ra LocalDate)
-    val photosByDate = remember(stampImages) {
-        stampImages.groupBy {
-            java.time.Instant.ofEpochMilli(it.lastModified)
-                .atZone(java.time.ZoneId.systemDefault())
-                .toLocalDate()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val photosByDate: Map<java.time.LocalDate, List<String>> = when (uiState) {
+        is AlbumUiState.Success -> {
+            (uiState as AlbumUiState.Success).photosByDate
+                .mapValues { entry -> entry.value.sortedBy { it.lastModified }.map { it.path } }
         }
+        else -> emptyMap()
     }
 
     val coroutineScope = rememberCoroutineScope()
@@ -220,7 +221,7 @@ fun AlbumScreen(
                             DayContent(
                                 date = day.date,
                                 isCurrentMonth = day.position == DayPosition.MonthDate,
-                                photos = photosByDate[day.date]?.map { it.path } ?: emptyList(),
+                                photos = photosByDate[day.date] ?: emptyList(),
                                 onClick = { if (day.position == DayPosition.MonthDate) onDayClick(day.date) }
                             )
                         }
@@ -232,7 +233,7 @@ fun AlbumScreen(
                             DayContent(
                                 date = day.date,
                                 isCurrentMonth = true,
-                                photos = photosByDate[day.date]?.map { it.path } ?: emptyList(),
+                                photos = photosByDate[day.date] ?: emptyList(),
                                 onClick = { onDayClick(day.date) }
                             )
                         }
