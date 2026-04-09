@@ -7,23 +7,23 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
+import androidx.lifecycle.viewModelScope
+import com.example.scrapbooking.domain.model.Stamp
+import com.example.scrapbooking.domain.repository.StampRepository
+import kotlinx.coroutines.launch
 
 @HiltViewModel
-class AlbumViewModel @Inject constructor() : ViewModel() {
-    private val _photos = MutableStateFlow<Map<LocalDate, List<String>>>(emptyMap())
-    val photos: StateFlow<Map<LocalDate, List<String>>> = _photos.asStateFlow()
+class AlbumViewModel @Inject constructor(
+    private val stampRepository: StampRepository
+) : ViewModel() {
+    private val _stampImages = MutableStateFlow<List<Stamp>>(emptyList())
+    val stampImages: StateFlow<List<Stamp>> = _stampImages.asStateFlow()
 
     init {
-        loadMockData()
-    }
-
-    private fun loadMockData() {
-        val today = LocalDate.now()
-        _photos.value = mapOf(
-            today to listOf("https://picsum.photos/seed/1/200/200", "https://picsum.photos/seed/2/200/200"),
-            today.minusDays(2) to listOf("https://picsum.photos/seed/3/200/200"),
-            today.minusDays(5) to listOf("https://picsum.photos/seed/4/200/200", "https://picsum.photos/seed/5/200/200", "https://picsum.photos/seed/6/200/200"),
-            today.minusDays(10) to listOf("https://picsum.photos/seed/7/200/200")
-        )
+        viewModelScope.launch {
+            stampRepository.getStampImages().collect { stamps ->
+                _stampImages.value = stamps
+            }
+        }
     }
 }

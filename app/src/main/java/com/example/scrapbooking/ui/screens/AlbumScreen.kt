@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,7 +51,15 @@ fun AlbumScreen(
     
     val daysOfWeek = remember { daysOfWeek(firstDayOfWeek) }
     
-    val photos by viewModel.photos.collectAsState()
+    val stampImages by viewModel.stampImages.collectAsStateWithLifecycle()
+    // Group stampImages theo ngày (giả sử path hoặc lastModified có thể convert ra LocalDate)
+    val photosByDate = remember(stampImages) {
+        stampImages.groupBy {
+            java.time.Instant.ofEpochMilli(it.lastModified)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate()
+        }
+    }
 
     val coroutineScope = rememberCoroutineScope()
     
@@ -211,7 +220,7 @@ fun AlbumScreen(
                             DayContent(
                                 date = day.date,
                                 isCurrentMonth = day.position == DayPosition.MonthDate,
-                                photos = photos[day.date] ?: emptyList(),
+                                photos = photosByDate[day.date]?.map { it.path } ?: emptyList(),
                                 onClick = { if (day.position == DayPosition.MonthDate) onDayClick(day.date) }
                             )
                         }
@@ -223,7 +232,7 @@ fun AlbumScreen(
                             DayContent(
                                 date = day.date,
                                 isCurrentMonth = true,
-                                photos = photos[day.date] ?: emptyList(),
+                                photos = photosByDate[day.date]?.map { it.path } ?: emptyList(),
                                 onClick = { onDayClick(day.date) }
                             )
                         }
