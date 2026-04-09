@@ -9,7 +9,9 @@ import android.content.Context
 import com.example.scrapbooking.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
-import jakarta.inject.Inject
+import com.example.scrapbooking.domain.repository.StampRepository
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +21,7 @@ import kotlinx.coroutines.withContext
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val cameraRepository: CameraRepository,
+    private val stampRepository: StampRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -64,8 +67,31 @@ class HomeViewModel @Inject constructor(
     }
 
     fun saveStamp() {
-        // Thực hiện lưu ảnh (vào db/storage) ở đây
-        // Sau đó trở về trạng thái Ready
-        dismissStamp()
+        val state = _uiState.value
+        if (state is HomeUiState.CapturedStamp) {
+            viewModelScope.launch {
+                val bitmap = state.bitmap
+                val fileName = "stamp_${UUID.randomUUID()}.png"
+                val file = java.io.File(context.filesDir, "stamps/$fileName")
+                try {
+                    withContext(Dispatchers.IO) {
+                        file.parentFile?.mkdirs()
+                        java.io.FileOutputStream(file).use { out ->
+                            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                        }
+                    }
+                    val result = stampRepository.saveStampImage(bitmap, file.absolutePath)
+                    if (result.isSuccess) {
+                        _uiState.value = HomeUiState.Ready
+                    } else {
+                        _uiState.value = HomeUiState.Error(context.getString(R.string.error_cannot_capture))
+                    }
+                } catch (e: Exception) {
+                    _uiState.value = HomeUiState.Error(e.message ?: "Unknown error")
+                }
+            }
+        } else {
+            dismissStamp()
+        }
     }
 }
