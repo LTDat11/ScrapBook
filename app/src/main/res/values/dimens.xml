@@ -1,0 +1,10 @@
+<resources>
+    <dimen name="sheet_padding">10dp</dimen>
+    <dimen name="sheet_corner">16dp</dimen>
+    <dimen name="sheet_spacing">10dp</dimen>
+    <dimen name="button_height">40dp</dimen>
+    <dimen name="bottom_nav_height">56dp</dimen>
+    <dimen name="bottom_nav_margin">16dp</dimen>
+    <!-- Combined bottom padding to keep sheets above bottom navigation -->
+    <dimen name="sheet_bottom_padding">72dp</dimen>
+</resources>

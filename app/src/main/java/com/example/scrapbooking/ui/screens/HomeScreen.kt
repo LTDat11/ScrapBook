@@ -116,10 +116,14 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             alignment = Alignment.Center
         )
 
-        // ── Stamp popup ─────────────────────────────────────────────────────
+        // ── Stamp popup / bottom sheet ─────────────────────────────────────
         if (uiState is HomeUiState.CapturedStamp) {
+            val captured = uiState as HomeUiState.CapturedStamp
             StampPopup(
-                bitmap = (uiState as HomeUiState.CapturedStamp).bitmap,
+                bitmap = captured.bitmap,
+                date = captured.date,
+                time = captured.time,
+                location = captured.location,
                 onDismiss = { viewModel.dismissStamp() },
                 onSave = { viewModel.saveStamp() }
             )

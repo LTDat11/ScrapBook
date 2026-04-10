@@ -11,6 +11,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.example.scrapbooking.domain.repository.StampRepository
 import java.util.UUID
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,7 +61,16 @@ class HomeViewModel @Inject constructor(
             val cropped = withContext(Dispatchers.IO) {
                 cameraRepository.cropToMask(raw)
             }
-            _uiState.value = HomeUiState.CapturedStamp(cropped)
+
+            // Tạo metadata (date/time). Location chưa tích hợp, để null.
+            val now = Date()
+            val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val timeFormatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+            val date = dateFormatter.format(now)
+            val time = timeFormatter.format(now)
+            val location: String? = null
+
+            _uiState.value = HomeUiState.CapturedStamp(cropped, date = date, time = time, location = location)
         }
     }
 
@@ -80,7 +92,14 @@ class HomeViewModel @Inject constructor(
                             bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
                         }
                     }
-                    val result = stampRepository.saveStampImage(bitmap, file.absolutePath)
+                        // Pass metadata to repository so Stamp carries date/time/location
+                        val result = stampRepository.saveStampImage(
+                            bitmap,
+                            file.absolutePath,
+                            date = state.date,
+                            time = state.time,
+                            location = state.location
+                        )
                     if (result.isSuccess) {
                         _uiState.value = HomeUiState.Ready
                     } else {

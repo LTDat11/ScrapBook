@@ -19,7 +19,13 @@ class StampRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val stampDao: StampDao
 ) : StampRepository {
-    override suspend fun saveStampImage(bitmap: Bitmap, fileName: String): Result<String> = withContext(Dispatchers.IO) {
+    override suspend fun saveStampImage(
+        bitmap: Bitmap,
+        fileName: String,
+        date: String?,
+        time: String?,
+        location: String?
+    ): Result<String> = withContext(Dispatchers.IO) {
         try {
             // Nếu fileName là đường dẫn tuyệt đối đã tồn tại (ví dụ HomeViewModel đã lưu trước đó), dùng trực tiếp
             val providedPath = when {
@@ -56,8 +62,14 @@ class StampRepositoryImpl @Inject constructor(
                 "file://$filePath"
             }
 
-            // Insert vào DB
-            val stamp = Stamp(path = resultPath, lastModified = System.currentTimeMillis())
+            // Insert vào DB (gắn metadata nếu có)
+            val stamp = Stamp(
+                path = resultPath,
+                lastModified = System.currentTimeMillis(),
+                date = date,
+                time = time,
+                location = location
+            )
             val id = stampDao.insertStamp(stamp)
             if (BuildConfig.DEBUG) Log.d("StampRepo", "Insert DB id: $id, path: $resultPath")
             if (id > 0) Result.success(resultPath) else Result.failure(Exception("Insert failed"))

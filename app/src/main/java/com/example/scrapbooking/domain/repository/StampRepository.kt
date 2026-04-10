@@ -11,7 +11,13 @@ interface StampRepository {
      * @param fileName The name for the saved file
      * @return The absolute path or Uri of the saved image
      */
-    suspend fun saveStampImage(bitmap: Bitmap, fileName: String): Result<String>
+    suspend fun saveStampImage(
+        bitmap: Bitmap,
+        fileName: String,
+        date: String? = null,
+        time: String? = null,
+        location: String? = null
+    ): Result<String>
 
     /**
      * Observe all stamp images in storage

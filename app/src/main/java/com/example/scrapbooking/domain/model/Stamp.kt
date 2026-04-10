@@ -9,5 +9,8 @@ import androidx.room.PrimaryKey
 data class Stamp(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val path: String,
-    val lastModified: Long
+    val lastModified: Long,
+    val date: String? = null,
+    val time: String? = null,
+    val location: String? = null
 )
