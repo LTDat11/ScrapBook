@@ -15,6 +15,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +28,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -43,7 +45,14 @@ import java.util.concurrent.Executors
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-fun StampPopup(bitmap: Bitmap, onDismiss: () -> Unit, onSave: () -> Unit) {
+fun StampPopup(
+    bitmap: Bitmap,
+    date: String,
+    time: String,
+    location: String?,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
+) {
     var animateIn by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -106,29 +115,36 @@ fun StampPopup(bitmap: Bitmap, onDismiss: () -> Unit, onSave: () -> Unit) {
             )
         }
 
-        Column(
+        // Bottom sheet showing metadata + actions (white background)
+        Surface(
             modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = (translateY + 190).dp)
-                .fillMaxWidth(0.7f)
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(bottom = dimensionResource(id = com.example.scrapbooking.R.dimen.sheet_bottom_padding))
                 .alpha(contentAlpha),
-            horizontalAlignment = Alignment.CenterHorizontally
+            color = Color.White,
+            shape = androidx.compose.foundation.shape.RoundedCornerShape(
+                topStart = dimensionResource(id = com.example.scrapbooking.R.dimen.sheet_corner),
+                topEnd = dimensionResource(id = com.example.scrapbooking.R.dimen.sheet_corner)
+            )
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Button(
-                    onClick = { dismissWithAnimation(onDismiss) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
-                ) {
-                    Text(stringResource(R.string.action_cancel), color = Color.White)
-                }
-                
-                Button(
-                    onClick = { dismissWithAnimation(onSave) }
-                ) {
-                    Text(stringResource(R.string.action_save_photo))
+            Column(modifier = Modifier.padding(dimensionResource(id = com.example.scrapbooking.R.dimen.sheet_padding))) {
+                Text(text = stringResource(id = R.string.sheet_title), style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(dimensionResource(id = com.example.scrapbooking.R.dimen.sheet_spacing)))
+                Text(text = stringResource(id = R.string.image_info_date, date))
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = stringResource(id = R.string.image_info_time, time))
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = stringResource(id = R.string.image_info_location, location ?: "-"))
+                Spacer(modifier = Modifier.height(dimensionResource(id = com.example.scrapbooking.R.dimen.sheet_spacing)))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    androidx.compose.material3.TextButton(onClick = { dismissWithAnimation(onDismiss) }) {
+                        Text(text = stringResource(id = R.string.action_retry))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(onClick = { dismissWithAnimation(onSave) }) {
+                        Text(text = stringResource(id = R.string.action_save_photo))
+                    }
                 }
             }
         }

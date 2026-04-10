@@ -25,4 +25,8 @@
     <string name="title_camera_permission">Quyền truy cập camera</string>
     <string name="desc_camera_permission">Ứng dụng cần camera để quét mã và thực hiện các tính năng. Vui lòng cấp quyền để tiếp tục.</string>
     <string name="action_grant_permission">Cấp quyền ngay</string>
+    <string name="sheet_title">Thông tin ảnh</string>
+    <string name="image_info_date">Ngày: %1$s</string>
+    <string name="image_info_time">Thời gian: %1$s</string>
+    <string name="image_info_location">Vị trí: %1$s</string>
 </resources>
