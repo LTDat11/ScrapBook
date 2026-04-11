@@ -166,13 +166,14 @@ fun CameraPreview(
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var previewUseCase by remember { mutableStateOf<Preview?>(null) }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val strErrorCamera = stringResource(id = R.string.error_camera_init)
 
     LaunchedEffect(Unit) {
         try {
             val future = ProcessCameraProvider.getInstance(context)
             future.addListener({ cameraProvider = future.get() }, ContextCompat.getMainExecutor(context))
         } catch (e: Exception) {
-            onError(e.message ?: context.getString(R.string.error_camera_init))
+            onError(e.message ?: strErrorCamera)
         }
     }
 
@@ -199,7 +200,7 @@ fun CameraPreview(
             PreviewView(ctx).apply {
                 implementationMode = PreviewView.ImplementationMode.COMPATIBLE
                 previewUseCase = Preview.Builder().build().also {
-                    it.setSurfaceProvider(surfaceProvider)
+                    it.surfaceProvider = surfaceProvider
                 }
                 onPreviewViewReady(this)     // trả reference ra ngoài
             }

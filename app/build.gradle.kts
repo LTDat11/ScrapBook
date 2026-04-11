@@ -81,7 +81,7 @@ dependencies {
 
     implementation(libs.androidx.compose.material.icons.extended)
 
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.accompanist.permissions)
     implementation(libs.kizitonwose.calendar.compose)
 }

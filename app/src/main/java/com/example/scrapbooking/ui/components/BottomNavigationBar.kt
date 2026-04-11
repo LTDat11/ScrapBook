@@ -68,7 +68,6 @@ fun BottomNavigationBar(navController: NavController, modifier: Modifier = Modif
                             Screen.Home -> Icons.Default.Home
                             Screen.Gallery -> Icons.Default.PhotoLibrary
                             Screen.Detail -> TODO()
-                            else -> TODO()
                         },
                         contentDescription = screen.route,
                         tint = if (isSelected) Color(0xFF0A84FF) else Color.White

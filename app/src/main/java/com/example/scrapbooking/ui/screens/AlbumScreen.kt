@@ -87,8 +87,8 @@ fun AlbumScreen(
     var showDatePicker by remember { mutableStateOf(false) }
 
     if (showDatePicker) {
-        var tempYear by remember { mutableStateOf(currentYearMonth.year) }
-        var tempMonth by remember { mutableStateOf(currentYearMonth.monthValue) }
+        var tempYear by remember { mutableIntStateOf(currentYearMonth.year) }
+        var tempMonth by remember { mutableIntStateOf(currentYearMonth.monthValue) }
 
         val months = listOf(
             "Thg 1", "Thg 2", "Thg 3",

@@ -46,6 +46,9 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
     val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val strErrorCameraRationale = stringResource(id = R.string.error_camera_rationale)
+    val strErrorCameraFormat = stringResource(id = R.string.error_camera_format)
+
 
     // Giữ tham chiếu đến PreviewView để chụp bitmap
     var previewViewRef by remember { mutableStateOf<PreviewView?>(null) }
@@ -59,7 +62,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
             PermissionStatus.Granted -> viewModel.setCameraReady()
             is PermissionStatus.Denied -> {
                 val denied = cameraPermissionState.status as PermissionStatus.Denied
-                if (denied.shouldShowRationale) viewModel.setError(context.getString(R.string.error_camera_rationale))
+                if (denied.shouldShowRationale) viewModel.setError(strErrorCameraRationale)
                 else viewModel.setPermissionDenied()
             }
         }
@@ -81,7 +84,7 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 modifier = Modifier.fillMaxSize(),
                 lifecycleOwner = lifecycleOwner,
                 onPreviewViewReady = { previewViewRef = it },
-                onError = { viewModel.setError(context.getString(R.string.error_camera_format, it)) }
+                onError = { viewModel.setError(strErrorCameraFormat) }
             )
 
             // ── Khung mask2 — chỉ hiển thị khi quyền camera được cấp
