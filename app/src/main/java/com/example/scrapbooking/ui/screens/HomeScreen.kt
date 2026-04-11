@@ -83,6 +83,29 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 onPreviewViewReady = { previewViewRef = it },
                 onError = { viewModel.setError(context.getString(R.string.error_camera_format, it)) }
             )
+
+            // ── Khung mask2 — chỉ hiển thị khi quyền camera được cấp
+            Image(
+                painter = painterResource(id = R.drawable.mask2),
+                contentDescription = stringResource(R.string.desc_stamp_frame),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .scale(maskScale)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onPress = {
+                                isMaskPressed = true
+                                tryAwaitRelease()
+                                isMaskPressed = false
+                            },
+                            onTap = {
+                                previewViewRef?.let { pv -> viewModel.captureStamp(pv) }
+                            }
+                        )
+                    },
+                contentScale = ContentScale.Fit,
+                alignment = Alignment.Center
+            )
         } else {
             when (uiState) {
                 is HomeUiState.PermissionDenied ->
@@ -92,29 +115,6 @@ fun HomeScreen(viewModel: HomeViewModel = hiltViewModel()) {
                 else -> LoadingView()
             }
         }
-
-        // ── Khung mask2 — có hiệu ứng nhấn + trigger chụp ảnh ─────────────
-        Image(
-            painter = painterResource(id = R.drawable.mask2),
-            contentDescription = stringResource(R.string.desc_stamp_frame),
-            modifier = Modifier
-                .fillMaxSize()
-                .scale(maskScale)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = {
-                            isMaskPressed = true
-                            tryAwaitRelease()
-                            isMaskPressed = false
-                        },
-                        onTap = {
-                            previewViewRef?.let { pv -> viewModel.captureStamp(pv) }
-                        }
-                    )
-                },
-            contentScale = ContentScale.Fit,
-            alignment = Alignment.Center
-        )
 
         // ── Stamp popup / bottom sheet ─────────────────────────────────────
         if (uiState is HomeUiState.CapturedStamp) {
