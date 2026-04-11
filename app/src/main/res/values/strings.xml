@@ -13,6 +13,8 @@
     <!-- UI Definitions -->
     <string name="text_loading">Đang tải...</string>
     <string name="title_album_screen">Album Screen</string>
+    <string name="title_album_detail">Album: %1$s</string>
+    <string name="no_photos">Không có ảnh</string>
     <string name="desc_stamp_frame">Khung chụp ảnh</string>
     <string name="desc_stamp_photo">Ảnh đã chụp</string>
     
