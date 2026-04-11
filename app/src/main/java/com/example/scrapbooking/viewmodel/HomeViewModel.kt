@@ -86,20 +86,62 @@ class HomeViewModel @Inject constructor(
                 val fileName = "stamp_${UUID.randomUUID()}.png"
                 val file = java.io.File(context.filesDir, "stamps/$fileName")
                 try {
+                    var savedBitmap: android.graphics.Bitmap? = null
+
+                    // Helper: center-crop to target aspect ratio (preserve resolution)
+                    fun centerCropToAspect(src: android.graphics.Bitmap, aspect: Float): android.graphics.Bitmap {
+                        val w = src.width
+                        val h = src.height
+                        val srcAspect = w.toFloat() / h.toFloat()
+                        return if (srcAspect > aspect) {
+                            // source is wider -> crop left/right
+                            val newW = (h * aspect).toInt()
+                            val left = (w - newW) / 2
+                            android.graphics.Bitmap.createBitmap(src, left, 0, newW, h)
+                        } else if (srcAspect < aspect) {
+                            // source is taller -> crop top/bottom
+                            val newH = (w / aspect).toInt()
+                            val top = (h - newH) / 2
+                            android.graphics.Bitmap.createBitmap(src, 0, top, w, newH)
+                        } else src
+                    }
+
                     withContext(Dispatchers.IO) {
                         file.parentFile?.mkdirs()
-                        java.io.FileOutputStream(file).use { out ->
-                            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+
+                        // Match preview aspect in StampPopup (155dp x 190dp)
+                        val previewAspect = 155f / 190f
+                        val croppedForPreview = centerCropToAspect(bitmap, previewAspect)
+
+                        val density = context.resources.displayMetrics.density
+                        val perforationRadiusPx = 5.5f * density // same default as StampShape
+
+                        val finalBitmap = try {
+                            cameraRepository.applyStampMask(
+                                croppedForPreview,
+                                hPerforations = 7,
+                                vPerforations = 9,
+                                perforationRadiusPx = perforationRadiusPx
+                            )
+                        } catch (e: Exception) {
+                            croppedForPreview
                         }
+
+                        java.io.FileOutputStream(file).use { out ->
+                            finalBitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+                            out.flush()
+                        }
+                        savedBitmap = finalBitmap
                     }
-                        // Pass metadata to repository so Stamp carries date/time/location
-                        val result = stampRepository.saveStampImage(
-                            bitmap,
-                            file.absolutePath,
-                            date = state.date,
-                            time = state.time,
-                            location = state.location
-                        )
+
+                    // Pass metadata to repository so Stamp carries date/time/location
+                    val result = stampRepository.saveStampImage(
+                        savedBitmap ?: bitmap,
+                        file.absolutePath,
+                        date = state.date,
+                        time = state.time,
+                        location = state.location
+                    )
                     if (result.isSuccess) {
                         _uiState.value = HomeUiState.Ready
                     } else {
